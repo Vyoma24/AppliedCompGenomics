@@ -1,0 +1,99 @@
+---
+title: "ACG_Assignment5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Please loading the reads counts file 'vehicle_drug_feature_counts.txtPreview the document' into the R program. The four columns of the file indicate two control biological replicates(veicale_rep1/2.bam) and two drug treatments (drug_rep1/2.bam).** 
+
+```{r}
+## Uploading data into R
+vehicledrugs <- read.table(file = '/Users/vyomasheth/Downloads/vehicle_drug_feature_counts.txt',sep = '\t', header = T, row.names = 1)
+head(vehicledrugs)
+
+## Segregating the columns needed to do the analysis and assigning name to it.
+counts <- vehicledrugs[,6:9]
+```
+
+**a) Please use ‘for’ loop list the ‘quantile’ distribution of four columns (25 points).**
+```{r}
+##Using "for" loop to to list the quantile distribution of those columns.
+
+for (i in 1:ncol(counts)) 
+  {
+   print(quantile(counts[,i]))
+}
+## Writing the above for loop in function in function
+Quantile_calc <- function(y)
+  {
+    quantileAll <- c()
+    for (i in 1:ncol(counts)) 
+    {
+      cu <- quantile(counts[,i])
+    }
+    return(cu)
+}
+Quantile_calc(counts[,i])
+```
+
+**b) Using the ‘apply’ function to list the ‘quantile’ distribution of four columns (25 points).**
+
+```{r}
+##Listing the quantile distribution using apply function
+quantile_list <- apply(counts,2,quantile)
+
+##Writing above distrubution in function
+quantilelist <- function(a)
+{
+  quantile_listing <- apply(counts,2,quantile)
+  return(quantile_listing)
+}
+quantilelist(vehicledrugs[,6:9])
+```
+
+**Calculating the Fragments Per Kilobase of transcript per Million mapped reads (FPKM) for each column in the reads counts file ‘vehicle_drug_feature_counts.txt.’ a) Using ‘which’ and ‘rowSums’ pick up the genes with at least one read (15 points).**
+```{r}
+##Fnding the Genelength from the data provided for further use in calculating FPKM
+Genelength <- vehicledrugs$Length
+which(rownames(counts) != rownames(vehicledrugs) )
+
+##Finding genes that have atleast 1 read using which and rowSums
+keep <- which(rowSums(counts) > 1)
+```
+
+**b) Using ‘for’ loop to calculate FPKM for each column (15 points).** 
+
+```{r}
+## Using 'for' loop to calculate FPKM
+FPKMcalc <- function(z)
+{
+  fpkmAll <- c()
+  for (i in 1:ncol(counts)) 
+    {
+    co <- counts[,i]
+    fpkm <- (co/Genelength/sum(co)) *(10^9)
+    fpkmAll <- cbind(fpkmAll, fpkm)
+  }
+  rownames(fpkmAll) <- rownames(counts)
+  colnames(fpkm)
+  return(fpkmAll)
+}
+
+FPKMcalc(counts[,i])
+```
+
+**c) Using the ‘apply’ function to calculate FPKM for each column (20 points).**
+
+```{r}
+##Using apply function to get list of FPKM for each column.
+FPKMcalc_col <- function(x)
+{
+  fpkm <- x/sum(x)/Genelength*10^9
+  return(fpkm)
+}
+fpkm_apply <- apply(counts,2,
+                    FPKMcalc_col)
+```

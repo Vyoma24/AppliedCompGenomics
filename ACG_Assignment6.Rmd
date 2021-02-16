@@ -1,0 +1,128 @@
+---
+title: "ACG_Asssignment6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(ggplot2)
+library(reshape2)
+```
+
+**Please loading the reads counts file 'vehicle_drug_feature_counts.txt' into the R program. The four columns of the file indicate two control biological replicates(veicale_rep1/2.bam) and two drug treatments (drug_rep1/2.bam)** 
+```{r}
+df <- read.table('~/Downloads/vehicle_drug_feature_counts.txt',
+                 header = T, sep = '\t' )
+head(df)
+```
+
+**1) Please calculating Fragments Per Kilobase of transcript per Million mapped reads (FPKM) for each column in the reads counts(5 points)**
+
+```{r}
+dfcounts <- df[,7:10]
+fpkm_norm <- apply(dfcounts, 2 ,
+                   function(x){x/df$Length * 10^9/sum(x)})
+
+fpkm_norm <- data.frame(fpkm_norm)
+colnames(fpkm_norm) <- colnames(dfcounts)
+```
+
+**2) Generating the scatter plot for each pair of biological replicates. You should provide two plots, one is veicale_rep1 vs. veicale_rep2, another one is drug_rep1 vs. drug_rep2. The X and Y axis should be the log2( FPKM ) value of each bio-rep. The plot should provide the meaning of X and Y labels (20 points).**
+
+```{r}
+#Scatterplot
+par(mar=c(4,5,4,2))
+plot(log2(fpkm_norm$vehicle_rep1.bam), 
+     log2(fpkm_norm$vehicle_rep2.bam),
+     las = 1,pch = 21, bg = 'pink',
+     xlab = 'log2(vehicle_rep1)', ylab = 'log2(vehicle_rep2)',
+     main = 'Biological Replicates')
+id <- which(is.finite(log2(fpkm_norm$vehicle_rep2.bam)) & is.finite (log2(fpkm_norm$vehicle_rep1.bam)))
+abline(lm(log2(fpkm_norm[id,2]) ~ log2(fpkm_norm[id,1])))
+
+par(mar=c(4,5,4,2))
+plot(log2(fpkm_norm$drug_rep1.bam), 
+     log2(fpkm_norm$drug_rep2.bam),
+     las = 1,pch = 21, bg = 'red',
+     xlab = 'log2(drug_rep1)', ylab = 'log2(drug_rep2)',
+     main = 'Biological Replicates')
+id <- which(is.finite(log2(fpkm_norm$drug_rep2.bam)) & is.finite (log2(fpkm_norm$drug_rep1.bam)))
+abline(lm(log2(fpkm_norm[id,4]) ~ log2(fpkm_norm[id,3])))
+```
+
+**3) Generating the boxplots according to FPKM value of each assay. You should consider putting four boxplots in one figure panel. The beginning two boxplots are the two bio-reps from ‘veicale_rep’, while the two following ones are ‘drug_rep’. The Y-axis of the boxplot should be log2(FPKM). The X-axis should be two ‘veicale_rep’ and two ‘drug_rep’. Please consider giving different colors to distinguish the two assays (veicale_rep and drug_rep) (25 points).**
+
+```{r}
+#Boxplot
+fpkm_norm_log2 <- log2(fpkm_norm + 0.01)
+fpkm_norm_log2 <- data.frame(fpkm_norm_log2)
+
+par(mar=c(6,5,4,2))
+boxplot(fpkm_norm_log2$vehicle_rep1.bam,
+        fpkm_norm_log2$vehicle_rep2.bam,
+        fpkm_norm_log2$drug_rep1.bam,
+        fpkm_norm_log2$drug_rep2.bam,
+        names = c('vehicle_rep1','vehicle_rep2','drug_rep1','drug)_rep2'),
+        outline = F, las = 2,
+        col = c('pink','pink','red','red'),
+        border = c('pink','pink','red','red'),
+        medcol = rep('navy', 4),
+        ylab = 'log2(FPKM + 0.01)',main = 'Biological Replicates')
+```
+
+**4) Similar to question C, but generating a histogram for each assay according to FPKM value. The four histograms should have the same lower and the upper limit on the x-axis and y-axis. Each histogram should clearly annotate the assay's name and have the same number of the breakpoint between histogram cells (hint: using breaks in traditional R plot) (25 points).**
+
+```{r}
+#Histogram
+
+hist_fpkm <- function(val, xlabel, maintitle)
+  
+{
+  hist(val, col = 'cyan',
+       xlab = xlabel,
+       main = maintitle,
+       las=1, xlim = c(-5,15),
+       ylim = c(-5,200),
+       breaks = 100)
+  
+}
+
+
+par((mfrow=c(2,2)),mar=c(6,5,4,2))
+hist_fpkm(fpkm_norm_log2$vehicle_rep1.bam,
+          'log2(FPKM + 0.01)', main = 'Vehicle_rep1')
+hist_fpkm(fpkm_norm_log2$vehicle_rep2.bam,
+          'log2(FPKM + 0.01)', main = 'Vehicle_rep2')
+hist_fpkm(fpkm_norm_log2$drug_rep1.bam,
+          'log2(FPKM + 0.01)', main = 'Drug_rep1')
+hist_fpkm(fpkm_norm_log2$drug_rep2.bam,
+          'log2(FPKM + 0.01)', main = 'Drug_rep2')
+```
+
+**5) Generating a heatmap to compare the correlation between each assay. The heatmap should contain all Pearson correlation between each pair of the assays. The meaning of column and row should be list on the plot and the color legend need to be provided (25 points).**
+
+```{r}
+##GGPLOT Heatmap
+
+cor_fpkm <- cor(fpkm_norm)
+cor_fpkm_melt <- melt(cor_fpkm)
+
+ggplot(data = cor_fpkm_melt, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile(color = 'white') +
+  scale_fill_gradient2(low = "blue", high = "navy", mid = "white", 
+                       midpoint = 0.9, limit = c(0.8,1), 
+                       name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45,
+                                   vjust = 1, 
+                                   size = 10, 
+                                   hjust = 1))+
+  coord_fixed()
+```
+
+
+
+
